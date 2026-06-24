@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MapPin, Search, User, Heart, ShoppingCart, Flame, ChevronRight, ShieldCheck, Truck, Warehouse, ImageIcon } from "lucide-react";
 import heroImg from "@/assets/hero-warehouse.jpg";
+import logoAsset from "@/assets/ak-zamzam-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -60,12 +61,8 @@ function Home() {
       {/* Header */}
       <header className="border-b border-border bg-cream">
         <div className="mx-auto flex max-w-7xl items-center gap-8 px-6 py-5">
-          <a href="/" className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded bg-primary text-primary-foreground font-serif text-lg font-bold">A</div>
-            <div className="leading-tight">
-              <div className="font-serif text-lg font-bold tracking-tight">AK ZAMZAM LLC</div>
-              <div className="text-[10px] font-semibold tracking-[0.18em] text-muted-foreground">WHOLESALE & RETAIL WAREHOUSE</div>
-            </div>
+          <a href="/" className="flex shrink-0 items-center">
+            <img src={logoAsset.url} alt="AK ZAMZAM LLC — Wholesale & Retail Warehouse" className="h-14 w-auto object-contain" />
           </a>
           <div className="flex flex-1 items-center overflow-hidden rounded-full border border-border bg-background pl-4">
             <Search className="h-4 w-4 text-muted-foreground" />
