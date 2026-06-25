@@ -40,6 +40,37 @@ const departments: { name: string; items: string[]; count: string }[] = [
 ];
 
 function Home() {
+  const [query, setQuery] = useState("");
+  const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
+  const [user, setUser] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const u = localStorage.getItem("akz:user");
+      if (u) setUser(u);
+    } catch {}
+  }, []);
+
+  const q = query.trim().toLowerCase();
+  const filtered = departments
+    .filter((d) => !activeCat || d.name === activeCat)
+    .map((d) => ({
+      ...d,
+      items: q
+        ? d.items.filter(
+            (it) => it.toLowerCase().includes(q) || d.name.toLowerCase().includes(q),
+          )
+        : d.items,
+    }))
+    .filter((d) => d.items.length > 0);
+
+  const onSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const el = document.getElementById("shop");
+    el?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top utility bar */}
@@ -53,7 +84,22 @@ function Home() {
           <div className="flex items-center gap-5 text-muted-foreground">
             <a href="#orders" className="hover:text-foreground">Order Status</a>
             <a href="#help" className="hover:text-foreground">Help</a>
-            <a href="#signin" className="hover:text-foreground">Sign in</a>
+            {user ? (
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem("akz:user");
+                  setUser(null);
+                }}
+                className="hover:text-foreground"
+              >
+                Sign out ({user})
+              </button>
+            ) : (
+              <button type="button" onClick={() => setShowLogin(true)} className="hover:text-foreground">
+                Sign in
+              </button>
+            )}
             <a href="#join" className="flex items-center gap-1 font-semibold text-primary">Join Members <ChevronRight className="h-3 w-3" /></a>
           </div>
         </div>
@@ -65,34 +111,56 @@ function Home() {
           <a href="/" className="flex shrink-0 items-center">
             <img src={logoAsset.url} alt="AK ZAMZAM LLC — Wholesale & Retail Warehouse" className="h-14 w-auto object-contain" />
           </a>
-          <div className="flex flex-1 items-center overflow-hidden rounded-full border border-border bg-background pl-4">
+          <form onSubmit={onSearchSubmit} className="flex flex-1 items-center overflow-hidden rounded-full border border-border bg-background pl-4">
             <Search className="h-4 w-4 text-muted-foreground" />
-            <input className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground" placeholder="Search bulk groceries, electronics, tires..." />
-            <button className="m-1 rounded-full bg-primary px-6 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">Search</button>
-          </div>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground"
+              placeholder="Search bulk groceries, electronics, tires..."
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery("")} className="px-2 text-muted-foreground hover:text-foreground" aria-label="Clear">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+            <button type="submit" className="m-1 rounded-full bg-primary px-6 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">Search</button>
+          </form>
           <div className="flex items-center gap-6 text-xs">
-            <a href="#account" className="flex flex-col items-center gap-0.5 hover:text-primary"><User className="h-5 w-5" /> Account</a>
+            <button type="button" onClick={() => user ? null : setShowLogin(true)} className="flex flex-col items-center gap-0.5 hover:text-primary">
+              <User className="h-5 w-5" /> {user ? user.slice(0, 8) : "Account"}
+            </button>
             <a href="#lists" className="flex flex-col items-center gap-0.5 hover:text-primary"><Heart className="h-5 w-5" /> Lists</a>
             <a href="#cart" className="flex items-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-sm font-semibold text-background">
               <ShoppingCart className="h-4 w-4" /> Cart <span className="grid h-5 w-5 place-items-center rounded-full bg-gold text-[10px] text-gold-foreground">3</span>
             </a>
           </div>
         </div>
-        {/* Nav */}
-        <nav className="mx-auto flex max-w-7xl items-center gap-7 px-6 pb-3 text-sm font-medium">
-          <a href="#shop" className="font-semibold text-primary">Shop</a>
-          <a href="#deals">Deals</a>
-          <a href="#grocery">Grocery</a>
-          <a href="#pharmacy">Pharmacy</a>
-          <a href="#optical">Optical</a>
-          <a href="#services">Services</a>
-          <a href="#travel">Travel</a>
-          <a href="#membership">Membership</a>
-          <span className="ml-auto h-5 w-px bg-border" />
-          <a href="#weekly" className="flex items-center gap-1.5 font-semibold text-[oklch(0.45_0.15_45)]"><Flame className="h-4 w-4" /> Weekly Deals</a>
-          <a href="#new" className="font-semibold text-[oklch(0.38_0.13_160)]">What's New</a>
+        {/* Categories nav */}
+        <nav className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-6 pb-3 text-xs font-medium">
+          <button
+            type="button"
+            onClick={() => setActiveCat(null)}
+            className={`rounded-full border px-3 py-1.5 transition ${!activeCat ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary hover:text-primary"}`}
+          >
+            All
+          </button>
+          {departments.map((d) => (
+            <button
+              key={d.name}
+              type="button"
+              onClick={() => {
+                setActiveCat(d.name);
+                document.getElementById("shop")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className={`rounded-full border px-3 py-1.5 transition ${activeCat === d.name ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary hover:text-primary"}`}
+            >
+              {d.name}
+            </button>
+          ))}
         </nav>
       </header>
+
 
       {/* Hero */}
       <section className="relative overflow-hidden">
@@ -140,7 +208,15 @@ function Home() {
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {departments.map((d) => (
-            <a key={d.name} href={`#cat-${slug(d.name)}`} className="group relative aspect-[5/4] overflow-hidden rounded-xl border border-border bg-cream">
+            <button
+              key={d.name}
+              type="button"
+              onClick={() => {
+                setActiveCat(d.name);
+                setTimeout(() => document.getElementById(`cat-${slug(d.name)}`)?.scrollIntoView({ behavior: "smooth" }), 50);
+              }}
+              className={`group relative aspect-[5/4] overflow-hidden rounded-xl border bg-cream text-left transition ${activeCat === d.name ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-primary"}`}
+            >
               <div className="absolute inset-0 grid place-items-center text-muted-foreground/50">
                 <ImageIcon className="h-8 w-8" />
               </div>
@@ -149,7 +225,7 @@ function Home() {
                 <div className="font-serif text-lg font-bold leading-tight">{d.name}</div>
                 <div className="mt-0.5 text-[11px] text-[oklch(0.97_0_0/0.8)]">{d.count}</div>
               </div>
-            </a>
+            </button>
           ))}
         </div>
       </section>
@@ -157,35 +233,58 @@ function Home() {
       {/* Per-category items */}
       <section className="border-t border-border bg-cream">
         <div className="mx-auto max-w-7xl px-6 py-16">
-          <div className="mb-10">
-            <div className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Featured This Week</div>
-            <h2 className="mt-2 font-serif text-4xl font-bold">Five top picks from every department</h2>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Warehouse-direct pricing across all 20 departments. Member-exclusive savings on every haul.
-            </p>
+          <div className="mb-10 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                {q ? `Search results for "${query}"` : activeCat ? activeCat : "Featured This Week"}
+              </div>
+              <h2 className="mt-2 font-serif text-4xl font-bold">
+                {q || activeCat ? `${filtered.reduce((n, d) => n + d.items.length, 0)} item${filtered.reduce((n, d) => n + d.items.length, 0) === 1 ? "" : "s"} found` : "Five top picks from every department"}
+              </h2>
+              {!q && !activeCat && (
+                <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                  Warehouse-direct pricing across all 20 departments. Member-exclusive savings on every haul.
+                </p>
+              )}
+            </div>
+            {(q || activeCat) && (
+              <button
+                type="button"
+                onClick={() => { setQuery(""); setActiveCat(null); }}
+                className="rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold hover:border-primary hover:text-primary"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
 
-          <div className="space-y-14">
-            {departments.map((d) => (
-              <div key={d.name} id={`cat-${slug(d.name)}`}>
-                <div className="mb-4 flex items-end justify-between border-b border-border pb-3">
-                  <h3 className="font-serif text-2xl font-bold">{d.name}</h3>
-                  <a href={`#shop-${slug(d.name)}`} className="text-xs font-semibold text-primary hover:underline">Shop all {d.count} ›</a>
+          {filtered.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-background p-12 text-center text-sm text-muted-foreground">
+              No items match "{query}". Try a different search.
+            </div>
+          ) : (
+            <div className="space-y-14">
+              {filtered.map((d) => (
+                <div key={d.name} id={`cat-${slug(d.name)}`}>
+                  <div className="mb-4 flex items-end justify-between border-b border-border pb-3">
+                    <h3 className="font-serif text-2xl font-bold">{d.name}</h3>
+                    <span className="text-xs font-semibold text-muted-foreground">{d.count}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+                    {d.items.map((item, i) => (
+                      <ProductCard
+                        key={item}
+                        category={d.name}
+                        item={item}
+                        price={price(d.name, i)}
+                        retail={priceRetail(d.name, i)}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-                  {d.items.map((item, i) => (
-                    <ProductCard
-                      key={item}
-                      category={d.name}
-                      item={item}
-                      price={price(d.name, i)}
-                      retail={priceRetail(d.name, i)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -227,6 +326,43 @@ function Home() {
           © {new Date().getFullYear()} AK ZAMZAM LLC. Wholesale & Retail Warehouse. All prices subject to change.
         </div>
       </footer>
+
+      {showLogin && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/60 p-4" onClick={() => setShowLogin(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-2xl bg-background p-6 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Member sign in</div>
+                <h3 className="mt-1 font-serif text-2xl font-bold">Welcome back</h3>
+              </div>
+              <button type="button" onClick={() => setShowLogin(false)} aria-label="Close" className="rounded-full p-1 hover:bg-cream">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form
+              className="mt-5 space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget as HTMLFormElement);
+                const email = String(fd.get("email") || "").trim();
+                if (!email) return;
+                localStorage.setItem("akz:user", email);
+                setUser(email);
+                setShowLogin(false);
+              }}
+            >
+              <label className="block text-xs font-semibold">Email
+                <input name="email" type="email" required className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" placeholder="you@example.com" />
+              </label>
+              <label className="block text-xs font-semibold">Password
+                <input name="password" type="password" required className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" placeholder="••••••••" />
+              </label>
+              <button type="submit" className="mt-2 w-full rounded-full bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90">Sign in</button>
+              <p className="text-center text-[11px] text-muted-foreground">New here? <a href="#join" className="font-semibold text-primary">Join Members</a></p>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
