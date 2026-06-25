@@ -40,6 +40,37 @@ const departments: { name: string; items: string[]; count: string }[] = [
 ];
 
 function Home() {
+  const [query, setQuery] = useState("");
+  const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
+  const [user, setUser] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const u = localStorage.getItem("akz:user");
+      if (u) setUser(u);
+    } catch {}
+  }, []);
+
+  const q = query.trim().toLowerCase();
+  const filtered = departments
+    .filter((d) => !activeCat || d.name === activeCat)
+    .map((d) => ({
+      ...d,
+      items: q
+        ? d.items.filter(
+            (it) => it.toLowerCase().includes(q) || d.name.toLowerCase().includes(q),
+          )
+        : d.items,
+    }))
+    .filter((d) => d.items.length > 0);
+
+  const onSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const el = document.getElementById("shop");
+    el?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top utility bar */}
