@@ -208,7 +208,15 @@ function Home() {
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {departments.map((d) => (
-            <a key={d.name} href={`#cat-${slug(d.name)}`} className="group relative aspect-[5/4] overflow-hidden rounded-xl border border-border bg-cream">
+            <button
+              key={d.name}
+              type="button"
+              onClick={() => {
+                setActiveCat(d.name);
+                setTimeout(() => document.getElementById(`cat-${slug(d.name)}`)?.scrollIntoView({ behavior: "smooth" }), 50);
+              }}
+              className={`group relative aspect-[5/4] overflow-hidden rounded-xl border bg-cream text-left transition ${activeCat === d.name ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-primary"}`}
+            >
               <div className="absolute inset-0 grid place-items-center text-muted-foreground/50">
                 <ImageIcon className="h-8 w-8" />
               </div>
@@ -217,10 +225,46 @@ function Home() {
                 <div className="font-serif text-lg font-bold leading-tight">{d.name}</div>
                 <div className="mt-0.5 text-[11px] text-[oklch(0.97_0_0/0.8)]">{d.count}</div>
               </div>
-            </a>
+            </button>
           ))}
         </div>
       </section>
+
+      {/* Per-category items */}
+      <section className="border-t border-border bg-cream">
+        <div className="mx-auto max-w-7xl px-6 py-16">
+          <div className="mb-10 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                {q ? `Search results for "${query}"` : activeCat ? activeCat : "Featured This Week"}
+              </div>
+              <h2 className="mt-2 font-serif text-4xl font-bold">
+                {q || activeCat ? `${filtered.reduce((n, d) => n + d.items.length, 0)} item${filtered.reduce((n, d) => n + d.items.length, 0) === 1 ? "" : "s"} found` : "Five top picks from every department"}
+              </h2>
+              {!q && !activeCat && (
+                <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                  Warehouse-direct pricing across all 20 departments. Member-exclusive savings on every haul.
+                </p>
+              )}
+            </div>
+            {(q || activeCat) && (
+              <button
+                type="button"
+                onClick={() => { setQuery(""); setActiveCat(null); }}
+                className="rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold hover:border-primary hover:text-primary"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-background p-12 text-center text-sm text-muted-foreground">
+              No items match "{query}". Try a different search.
+            </div>
+          ) : (
+            <div className="space-y-14">
+              {filtered.map((d) => (
 
       {/* Per-category items */}
       <section className="border-t border-border bg-cream">
