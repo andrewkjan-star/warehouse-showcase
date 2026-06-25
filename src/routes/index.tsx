@@ -84,7 +84,22 @@ function Home() {
           <div className="flex items-center gap-5 text-muted-foreground">
             <a href="#orders" className="hover:text-foreground">Order Status</a>
             <a href="#help" className="hover:text-foreground">Help</a>
-            <a href="#signin" className="hover:text-foreground">Sign in</a>
+            {user ? (
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem("akz:user");
+                  setUser(null);
+                }}
+                className="hover:text-foreground"
+              >
+                Sign out ({user})
+              </button>
+            ) : (
+              <button type="button" onClick={() => setShowLogin(true)} className="hover:text-foreground">
+                Sign in
+              </button>
+            )}
             <a href="#join" className="flex items-center gap-1 font-semibold text-primary">Join Members <ChevronRight className="h-3 w-3" /></a>
           </div>
         </div>
@@ -96,34 +111,56 @@ function Home() {
           <a href="/" className="flex shrink-0 items-center">
             <img src={logoAsset.url} alt="AK ZAMZAM LLC — Wholesale & Retail Warehouse" className="h-14 w-auto object-contain" />
           </a>
-          <div className="flex flex-1 items-center overflow-hidden rounded-full border border-border bg-background pl-4">
+          <form onSubmit={onSearchSubmit} className="flex flex-1 items-center overflow-hidden rounded-full border border-border bg-background pl-4">
             <Search className="h-4 w-4 text-muted-foreground" />
-            <input className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground" placeholder="Search bulk groceries, electronics, tires..." />
-            <button className="m-1 rounded-full bg-primary px-6 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">Search</button>
-          </div>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground"
+              placeholder="Search bulk groceries, electronics, tires..."
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery("")} className="px-2 text-muted-foreground hover:text-foreground" aria-label="Clear">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+            <button type="submit" className="m-1 rounded-full bg-primary px-6 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">Search</button>
+          </form>
           <div className="flex items-center gap-6 text-xs">
-            <a href="#account" className="flex flex-col items-center gap-0.5 hover:text-primary"><User className="h-5 w-5" /> Account</a>
+            <button type="button" onClick={() => user ? null : setShowLogin(true)} className="flex flex-col items-center gap-0.5 hover:text-primary">
+              <User className="h-5 w-5" /> {user ? user.slice(0, 8) : "Account"}
+            </button>
             <a href="#lists" className="flex flex-col items-center gap-0.5 hover:text-primary"><Heart className="h-5 w-5" /> Lists</a>
             <a href="#cart" className="flex items-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-sm font-semibold text-background">
               <ShoppingCart className="h-4 w-4" /> Cart <span className="grid h-5 w-5 place-items-center rounded-full bg-gold text-[10px] text-gold-foreground">3</span>
             </a>
           </div>
         </div>
-        {/* Nav */}
-        <nav className="mx-auto flex max-w-7xl items-center gap-7 px-6 pb-3 text-sm font-medium">
-          <a href="#shop" className="font-semibold text-primary">Shop</a>
-          <a href="#deals">Deals</a>
-          <a href="#grocery">Grocery</a>
-          <a href="#pharmacy">Pharmacy</a>
-          <a href="#optical">Optical</a>
-          <a href="#services">Services</a>
-          <a href="#travel">Travel</a>
-          <a href="#membership">Membership</a>
-          <span className="ml-auto h-5 w-px bg-border" />
-          <a href="#weekly" className="flex items-center gap-1.5 font-semibold text-[oklch(0.45_0.15_45)]"><Flame className="h-4 w-4" /> Weekly Deals</a>
-          <a href="#new" className="font-semibold text-[oklch(0.38_0.13_160)]">What's New</a>
+        {/* Categories nav */}
+        <nav className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-6 pb-3 text-xs font-medium">
+          <button
+            type="button"
+            onClick={() => setActiveCat(null)}
+            className={`rounded-full border px-3 py-1.5 transition ${!activeCat ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary hover:text-primary"}`}
+          >
+            All
+          </button>
+          {departments.map((d) => (
+            <button
+              key={d.name}
+              type="button"
+              onClick={() => {
+                setActiveCat(d.name);
+                document.getElementById("shop")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className={`rounded-full border px-3 py-1.5 transition ${activeCat === d.name ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary hover:text-primary"}`}
+            >
+              {d.name}
+            </button>
+          ))}
         </nav>
       </header>
+
 
       {/* Hero */}
       <section className="relative overflow-hidden">
