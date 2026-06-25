@@ -265,39 +265,26 @@ function Home() {
           ) : (
             <div className="space-y-14">
               {filtered.map((d) => (
-
-      {/* Per-category items */}
-      <section className="border-t border-border bg-cream">
-        <div className="mx-auto max-w-7xl px-6 py-16">
-          <div className="mb-10">
-            <div className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Featured This Week</div>
-            <h2 className="mt-2 font-serif text-4xl font-bold">Five top picks from every department</h2>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Warehouse-direct pricing across all 20 departments. Member-exclusive savings on every haul.
-            </p>
-          </div>
-
-          <div className="space-y-14">
-            {departments.map((d) => (
-              <div key={d.name} id={`cat-${slug(d.name)}`}>
-                <div className="mb-4 flex items-end justify-between border-b border-border pb-3">
-                  <h3 className="font-serif text-2xl font-bold">{d.name}</h3>
-                  <a href={`#shop-${slug(d.name)}`} className="text-xs font-semibold text-primary hover:underline">Shop all {d.count} ›</a>
+                <div key={d.name} id={`cat-${slug(d.name)}`}>
+                  <div className="mb-4 flex items-end justify-between border-b border-border pb-3">
+                    <h3 className="font-serif text-2xl font-bold">{d.name}</h3>
+                    <span className="text-xs font-semibold text-muted-foreground">{d.count}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+                    {d.items.map((item, i) => (
+                      <ProductCard
+                        key={item}
+                        category={d.name}
+                        item={item}
+                        price={price(d.name, i)}
+                        retail={priceRetail(d.name, i)}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-                  {d.items.map((item, i) => (
-                    <ProductCard
-                      key={item}
-                      category={d.name}
-                      item={item}
-                      price={price(d.name, i)}
-                      retail={priceRetail(d.name, i)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
