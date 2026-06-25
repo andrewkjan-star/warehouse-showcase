@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { MapPin, Search, User, Heart, ShoppingCart, Flame, ChevronRight, ShieldCheck, Truck, Warehouse, ImageIcon, Upload, X } from "lucide-react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { MapPin, Search, User, Heart, ShoppingCart, ChevronRight, ShieldCheck, Truck, Warehouse, ImageIcon, Upload, X, Plus, Minus, Trash2 } from "lucide-react";
 import heroImg from "@/assets/hero-warehouse.jpg";
 import logoAsset from "@/assets/ak-zamzam-logo.png.asset.json";
 
@@ -39,11 +39,73 @@ const departments: { name: string; items: string[]; count: string }[] = [
   { name: "Seasonal & Holiday", count: "320+ items", items: ["7.5 ft Pre-Lit Christmas Tree", "Inflatable Yard Decor 8 ft", "String Lights 100 ft", "Halloween Costume Bundle", "Outdoor Holiday Wreath 30\""] },
 ];
 
+// ============ Cart ============
+type CartItem = { id: string; category: string; name: string; price: number; qty: number };
+type CartCtx = {
+  items: CartItem[];
+  add: (i: Omit<CartItem, "qty">) => void;
+  setQty: (id: string, qty: number) => void;
+  remove: (id: string) => void;
+  clear: () => void;
+  count: number;
+  subtotal: number;
+};
+const CartContext = createContext<CartCtx | null>(null);
+const useCart = () => {
+  const c = useContext(CartContext);
+  if (!c) throw new Error("useCart outside provider");
+  return c;
+};
+
+function CartProvider({ children }: { children: React.ReactNode }) {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const loaded = useRef(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("akz:cart");
+      if (raw) setItems(JSON.parse(raw));
+    } catch {}
+    loaded.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!loaded.current) return;
+    try { localStorage.setItem("akz:cart", JSON.stringify(items)); } catch {}
+  }, [items]);
+
+  const value = useMemo<CartCtx>(() => ({
+    items,
+    add: (i) => setItems((cur) => {
+      const found = cur.find((x) => x.id === i.id);
+      if (found) return cur.map((x) => x.id === i.id ? { ...x, qty: x.qty + 1 } : x);
+      return [...cur, { ...i, qty: 1 }];
+    }),
+    setQty: (id, qty) => setItems((cur) => qty <= 0 ? cur.filter((x) => x.id !== id) : cur.map((x) => x.id === id ? { ...x, qty } : x)),
+    remove: (id) => setItems((cur) => cur.filter((x) => x.id !== id)),
+    clear: () => setItems([]),
+    count: items.reduce((n, x) => n + x.qty, 0),
+    subtotal: items.reduce((n, x) => n + x.qty * x.price, 0),
+  }), [items]);
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+}
+
 function Home() {
+  return (
+    <CartProvider>
+      <HomeInner />
+    </CartProvider>
+  );
+}
+
+function HomeInner() {
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [showCart, setShowCart] = useState(false);
   const [user, setUser] = useState<string | null>(null);
+  const { count } = useCart();
 
   useEffect(() => {
     try {
@@ -78,25 +140,20 @@ function Home() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2 text-xs">
           <div className="flex items-center gap-5 text-muted-foreground">
             <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-primary" /> Warehouse: Brooklyn, NY</span>
-            <a href="#business" className="hover:text-foreground">For Business</a>
-            <a href="#services" className="hover:text-foreground">Services</a>
+            <span>Customer Service</span>
+            <span>Get Email Offers</span>
           </div>
-          <div className="flex items-center gap-5 text-muted-foreground">
-            <a href="#orders" className="hover:text-foreground">Order Status</a>
-            <a href="#help" className="hover:text-foreground">Help</a>
+          <div className="flex items-center gap-5">
             {user ? (
               <button
                 type="button"
-                onClick={() => {
-                  localStorage.removeItem("akz:user");
-                  setUser(null);
-                }}
-                className="hover:text-foreground"
+                onClick={() => { localStorage.removeItem("akz:user"); setUser(null); }}
+                className="font-semibold text-muted-foreground hover:text-primary"
               >
                 Sign out ({user})
               </button>
             ) : (
-              <button type="button" onClick={() => setShowLogin(true)} className="hover:text-foreground">
+              <button type="button" onClick={() => setShowLogin(true)} className="font-semibold text-muted-foreground hover:text-primary">
                 Sign in
               </button>
             )}
@@ -131,9 +188,14 @@ function Home() {
               <User className="h-5 w-5" /> {user ? user.slice(0, 8) : "Account"}
             </button>
             <a href="#lists" className="flex flex-col items-center gap-0.5 hover:text-primary"><Heart className="h-5 w-5" /> Lists</a>
-            <a href="#cart" className="flex items-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-sm font-semibold text-background">
-              <ShoppingCart className="h-4 w-4" /> Cart <span className="grid h-5 w-5 place-items-center rounded-full bg-gold text-[10px] text-gold-foreground">3</span>
-            </a>
+            <button
+              type="button"
+              onClick={() => setShowCart(true)}
+              className="flex items-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:bg-primary"
+            >
+              <ShoppingCart className="h-4 w-4" /> Cart
+              <span className="grid h-5 min-w-[1.25rem] place-items-center rounded-full bg-gold px-1 text-[10px] text-gold-foreground">{count}</span>
+            </button>
           </div>
         </div>
         {/* Categories nav */}
@@ -363,7 +425,181 @@ function Home() {
           </div>
         </div>
       )}
+
+      {showCart && <CartDrawer onClose={() => setShowCart(false)} />}
     </div>
+  );
+}
+
+function CartDrawer({ onClose }: { onClose: () => void }) {
+  const { items, setQty, remove, clear, subtotal, count } = useCart();
+  const [checkout, setCheckout] = useState(false);
+  const [done, setDone] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-foreground/60" onClick={onClose}>
+      <aside
+        onClick={(e) => e.stopPropagation()}
+        className="flex h-full w-full max-w-md flex-col bg-background shadow-2xl"
+      >
+        <header className="flex items-center justify-between border-b border-border px-5 py-4">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Your cart</div>
+            <h3 className="mt-0.5 font-serif text-xl font-bold">{count} item{count === 1 ? "" : "s"}</h3>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-1.5 hover:bg-cream">
+            <X className="h-5 w-5" />
+          </button>
+        </header>
+
+        {done ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+            <div className="grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary">
+              <ShieldCheck className="h-7 w-7" />
+            </div>
+            <h4 className="font-serif text-2xl font-bold">Order placed!</h4>
+            <p className="text-sm text-muted-foreground">Thanks for shopping with AK ZAMZAM. A confirmation will be sent to you shortly.</p>
+            <button type="button" onClick={onClose} className="mt-3 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground">Continue shopping</button>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center text-muted-foreground">
+            <ShoppingCart className="h-10 w-10" />
+            <p className="text-sm">Your cart is empty.</p>
+            <button type="button" onClick={onClose} className="mt-2 rounded-full border border-border px-4 py-2 text-xs font-semibold hover:border-primary hover:text-primary">Browse departments</button>
+          </div>
+        ) : checkout ? (
+          <CheckoutForm
+            subtotal={subtotal}
+            onBack={() => setCheckout(false)}
+            onComplete={() => { clear(); setDone(true); setCheckout(false); }}
+          />
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              <ul className="space-y-4">
+                {items.map((it) => (
+                  <li key={it.id} className="flex gap-3 border-b border-border pb-4 last:border-0">
+                    <div className="grid h-16 w-16 shrink-0 place-items-center rounded-md bg-cream text-muted-foreground/60">
+                      <ImageIcon className="h-6 w-6" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{it.category}</div>
+                      <div className="line-clamp-2 font-serif text-sm font-semibold leading-snug">{it.name}</div>
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <div className="flex items-center gap-1 rounded-full border border-border">
+                          <button type="button" onClick={() => setQty(it.id, it.qty - 1)} className="grid h-7 w-7 place-items-center hover:text-primary" aria-label="Decrease">
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="w-6 text-center text-xs font-semibold">{it.qty}</span>
+                          <button type="button" onClick={() => setQty(it.id, it.qty + 1)} className="grid h-7 w-7 place-items-center hover:text-primary" aria-label="Increase">
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <div className="text-sm font-bold">${(it.price * it.qty).toFixed(2)}</div>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => remove(it.id)} aria-label="Remove" className="text-muted-foreground hover:text-primary">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <footer className="space-y-3 border-t border-border bg-cream px-5 py-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-semibold">${subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Shipping</span>
+                <span>{subtotal >= 75 ? "FREE" : "Calculated at checkout"}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCheckout(true)}
+                className="w-full rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              >
+                Checkout — ${subtotal.toFixed(2)}
+              </button>
+              <button type="button" onClick={clear} className="w-full text-center text-[11px] font-semibold text-muted-foreground hover:text-primary">
+                Clear cart
+              </button>
+            </footer>
+          </>
+        )}
+      </aside>
+    </div>
+  );
+}
+
+function CheckoutForm({ subtotal, onBack, onComplete }: { subtotal: number; onBack: () => void; onComplete: () => void }) {
+  const [processing, setProcessing] = useState(false);
+  const shipping = subtotal >= 75 ? 0 : 9.99;
+  const tax = subtotal * 0.0875;
+  const total = subtotal + shipping + tax;
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        setProcessing(true);
+        setTimeout(() => onComplete(), 900);
+      }}
+      className="flex flex-1 flex-col overflow-hidden"
+    >
+      <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+        <button type="button" onClick={onBack} className="text-xs font-semibold text-muted-foreground hover:text-primary">← Back to cart</button>
+
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Shipping</div>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <input required placeholder="First name" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+            <input required placeholder="Last name" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+            <input required placeholder="Address" className="col-span-2 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+            <input required placeholder="City" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+            <input required placeholder="ZIP" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+          </div>
+        </div>
+
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Payment — Card</div>
+          <div className="mt-2 space-y-2">
+            <input required placeholder="Cardholder name" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+            <input
+              required
+              inputMode="numeric"
+              placeholder="Card number"
+              maxLength={19}
+              onChange={(e) => {
+                e.currentTarget.value = e.currentTarget.value.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
+              }}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <input required placeholder="MM / YY" maxLength={7} className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+              <input required placeholder="CVC" maxLength={4} inputMode="numeric" className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+            </div>
+            <p className="text-[10px] text-muted-foreground">Demo checkout — no real charges. Connect a payment provider to accept live cards.</p>
+          </div>
+        </div>
+
+        <div className="space-y-1.5 rounded-md border border-border bg-cream p-3 text-xs">
+          <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Shipping</span><span>{shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Tax</span><span>${tax.toFixed(2)}</span></div>
+          <div className="mt-1 flex justify-between border-t border-border pt-1.5 text-sm font-bold"><span>Total</span><span>${total.toFixed(2)}</span></div>
+        </div>
+      </div>
+      <footer className="border-t border-border bg-cream px-5 py-4">
+        <button
+          type="submit"
+          disabled={processing}
+          className="w-full rounded-full bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+        >
+          {processing ? "Processing…" : `Pay $${total.toFixed(2)}`}
+        </button>
+      </footer>
+    </form>
   );
 }
 
@@ -381,7 +617,9 @@ function priceRetail(cat: string, i: number) {
 function ProductCard({ category, item, price, retail }: { category: string; item: string; price: string; retail: string }) {
   const storageKey = `akz:img:${slug(category)}:${slug(item)}`;
   const [img, setImg] = useState<string | null>(null);
+  const [added, setAdded] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { add } = useCart();
 
   useEffect(() => {
     try {
@@ -406,6 +644,12 @@ function ProductCard({ category, item, price, retail }: { category: string; item
     setImg(null);
     try { localStorage.removeItem(storageKey); } catch {}
     if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const handleAdd = () => {
+    add({ id: `${slug(category)}:${slug(item)}`, category, name: item, price: parseFloat(price) });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1200);
   };
 
   return (
@@ -451,7 +695,13 @@ function ProductCard({ category, item, price, retail }: { category: string; item
           <span className="font-serif text-xl font-bold">${price}</span>
           <span className="text-xs text-muted-foreground line-through">${retail}</span>
         </div>
-        <button className="w-full rounded-full bg-foreground py-2 text-xs font-semibold text-background transition hover:bg-primary">Add to cart</button>
+        <button
+          type="button"
+          onClick={handleAdd}
+          className={`w-full rounded-full py-2 text-xs font-semibold transition ${added ? "bg-primary text-primary-foreground" : "bg-foreground text-background hover:bg-primary"}`}
+        >
+          {added ? "✓ Added" : "Add to cart"}
+        </button>
       </div>
     </article>
   );
