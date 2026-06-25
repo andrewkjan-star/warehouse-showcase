@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MapPin, Search, User, Heart, ShoppingCart, Flame, ChevronRight, ShieldCheck, Truck, Warehouse, ImageIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { MapPin, Search, User, Heart, ShoppingCart, Flame, ChevronRight, ShieldCheck, Truck, Warehouse, ImageIcon, Upload, X } from "lucide-react";
 import heroImg from "@/assets/hero-warehouse.jpg";
 import logoAsset from "@/assets/ak-zamzam-logo.png.asset.json";
 
