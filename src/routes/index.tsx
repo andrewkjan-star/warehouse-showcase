@@ -241,3 +241,82 @@ function price(cat: string, i: number) {
 function priceRetail(cat: string, i: number) {
   return (parseFloat(price(cat, i)) * 1.25).toFixed(2);
 }
+
+function ProductCard({ category, item, price, retail }: { category: string; item: string; price: string; retail: string }) {
+  const storageKey = `akz:img:${slug(category)}:${slug(item)}`;
+  const [img, setImg] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(storageKey);
+      if (v) setImg(v);
+    } catch {}
+  }, [storageKey]);
+
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = String(reader.result);
+      setImg(url);
+      try { localStorage.setItem(storageKey, url); } catch {}
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImg = () => {
+    setImg(null);
+    try { localStorage.removeItem(storageKey); } catch {}
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  return (
+    <article className="group overflow-hidden rounded-xl border border-border bg-background transition hover:shadow-lg">
+      <div className="relative aspect-square overflow-hidden bg-cream">
+        {img ? (
+          <>
+            <img src={img} alt={item} className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={clearImg}
+              aria-label="Remove image"
+              className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-background/90 text-foreground shadow hover:bg-background"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-background/90 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow hover:bg-background"
+            >
+              <Upload className="h-3 w-3" /> Replace
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground/70 transition hover:bg-cream/60 hover:text-primary"
+          >
+            <ImageIcon className="h-9 w-9" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1.5 text-[11px] font-semibold text-background">
+              <Upload className="h-3 w-3" /> Add photo
+            </span>
+          </button>
+        )}
+        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
+      </div>
+      <div className="space-y-2 p-4">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-primary">Member Price</div>
+        <h4 className="line-clamp-2 min-h-[2.5rem] font-serif text-[15px] font-semibold leading-snug">{item}</h4>
+        <div className="flex items-baseline gap-2">
+          <span className="font-serif text-xl font-bold">${price}</span>
+          <span className="text-xs text-muted-foreground line-through">${retail}</span>
+        </div>
+        <button className="w-full rounded-full bg-foreground py-2 text-xs font-semibold text-background transition hover:bg-primary">Add to cart</button>
+      </div>
+    </article>
+  );
+}
