@@ -174,20 +174,13 @@ function Home() {
                 </div>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
                   {d.items.map((item, i) => (
-                    <article key={item} className="group overflow-hidden rounded-xl border border-border bg-background transition hover:shadow-lg">
-                      <div className="grid aspect-square place-items-center bg-cream text-muted-foreground/40">
-                        <ImageIcon className="h-10 w-10" />
-                      </div>
-                      <div className="space-y-2 p-4">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-primary">Member Price</div>
-                        <h4 className="line-clamp-2 min-h-[2.5rem] font-serif text-[15px] font-semibold leading-snug">{item}</h4>
-                        <div className="flex items-baseline gap-2">
-                          <span className="font-serif text-xl font-bold">${price(d.name, i)}</span>
-                          <span className="text-xs text-muted-foreground line-through">${priceRetail(d.name, i)}</span>
-                        </div>
-                        <button className="w-full rounded-full bg-foreground py-2 text-xs font-semibold text-background transition hover:bg-primary">Add to cart</button>
-                      </div>
-                    </article>
+                    <ProductCard
+                      key={item}
+                      category={d.name}
+                      item={item}
+                      price={price(d.name, i)}
+                      retail={priceRetail(d.name, i)}
+                    />
                   ))}
                 </div>
               </div>
