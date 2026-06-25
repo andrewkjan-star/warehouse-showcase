@@ -326,6 +326,43 @@ function Home() {
           © {new Date().getFullYear()} AK ZAMZAM LLC. Wholesale & Retail Warehouse. All prices subject to change.
         </div>
       </footer>
+
+      {showLogin && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/60 p-4" onClick={() => setShowLogin(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-2xl bg-background p-6 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Member sign in</div>
+                <h3 className="mt-1 font-serif text-2xl font-bold">Welcome back</h3>
+              </div>
+              <button type="button" onClick={() => setShowLogin(false)} aria-label="Close" className="rounded-full p-1 hover:bg-cream">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form
+              className="mt-5 space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget as HTMLFormElement);
+                const email = String(fd.get("email") || "").trim();
+                if (!email) return;
+                localStorage.setItem("akz:user", email);
+                setUser(email);
+                setShowLogin(false);
+              }}
+            >
+              <label className="block text-xs font-semibold">Email
+                <input name="email" type="email" required className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" placeholder="you@example.com" />
+              </label>
+              <label className="block text-xs font-semibold">Password
+                <input name="password" type="password" required className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" placeholder="••••••••" />
+              </label>
+              <button type="submit" className="mt-2 w-full rounded-full bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90">Sign in</button>
+              <p className="text-center text-[11px] text-muted-foreground">New here? <a href="#join" className="font-semibold text-primary">Join Members</a></p>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
